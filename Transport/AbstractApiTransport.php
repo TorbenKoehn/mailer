@@ -17,6 +17,7 @@ use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\MessageConverter;
+use Symfony\Component\Mime\Message;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
 /**
@@ -28,8 +29,17 @@ abstract class AbstractApiTransport extends AbstractHttpTransport
 
     protected function doSendHttp(SentMessage $message): ResponseInterface
     {
+        $originalMessage = $message->getOriginalMessage();
+        if (!$originalMessage instanceof Message) {
+            throw new RuntimeException(sprintf(
+                'Invalid original message of type %s, needs to be instance of %s',
+                get_class($originalMessage),
+                Message::class,
+            ));
+        }
+        
         try {
-            $email = MessageConverter::toEmail($message->getOriginalMessage());
+            $email = MessageConverter::toEmail($originalMessage);
         } catch (\Exception $e) {
             throw new RuntimeException(sprintf('Unable to send message with the "%s" transport: ', __CLASS__).$e->getMessage(), 0, $e);
         }
